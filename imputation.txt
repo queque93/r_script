@@ -1,0 +1,79 @@
+#installation du package questionr
+install.packages("questionr", dep = TRUE)
+#chargement de la librairie
+library(questionr)
+#extraction du jeu de données
+data("hdv2003")
+#assignation dans un objet nommé df
+df<-hdv2003
+#inspection des données
+names(df)
+str(df)
+summary(df)
+sum(is.na(df))
+colSums(is.na(df))
+boxplot(df[,c("age","heures.tv")],col=rainbow(2))
+
+#On peut avoir aussi le pourcentage de valeur dans le jeu de données grâce à:
+p<-function(x){sum(is.na(x))/length(x)*100}
+apply(df,2,p)
+md.pattern(df)
+#Methode d'imputation par la moyenne ou ma mediane
+##extraction des variables cont#Visualisation des données manquantes
+mis_plot<-aggr(df,col=c("blue","red"),labels=names(df),cex.axis=0.6,gap=2,ylab=c("Missing data","Pattern"),
+               numbers=TRUE,sortVars=TRUE)
+df_quanti<-unlist(lapply(df,is.numeric))
+df_quanti
+tab_quanti<-df[,df_quanti]
+head(tab_quanti)
+tail(tab_quanti)
+colSums(is.na(tab_quanti))
+ for (i in 1:ncol(tab_quanti)){tab_quanti[is.na(tab_quanti[,i]),i] <- median(tab_quanti[,i],na.rm = TRUE)}
+tab_quanti_imp <-tab_quanti
+tab_quanti_imp
+## for (i in 1:ncol(df)){df[is.na(df[,i]),i] <- mean(df[,i],na.rm = TRUE)}
+
+# verification de l'imputation
+colSums(is.na(tab_quanti))
+median(tab_quanti[,5],na.rm = TRUE)
+##Methode d'imputation par knn (préférence pour les variables qualitatives mais marche bien avec les variables continue)
+       ##Extraction des variables qualitatives
+
+ df_qualif<-unlist(lapply(df,is.factor))
+ tab_qualif<-df[,df_qualif]
+ names(tab_qualif)
+ summary(tab_qualif)
+ head(tab_qualif)
+ colSums(is.na(tab_qualif))
+ tail(tab_qualif)
+ 
+#installation du package "VIM" depuis le CRAN install.packages(VIM)
+#chargement de la librairie 
+ 
+ library(VIM)
+ tab_qualif_imp<-kNN(tab_qualif,variable=c("nivetud","trav.imp","trav.satisf","qualif"),k=6)
+ dim(tab_qualif_imp)
+ dtaqual<-tab_qualif_imp[,-c(16,17,18,19)]
+ dtaqual$id<-1:2000
+ names(dtaqual)
+ #verification de l'imputation des variables qualitatives
+ any(is.na(dtaqual))
+ #fusion des tableaux de données 
+?merge()
+tab_imp<-merge(tab_quanti_imp,dtaqual, by ="id")
+names(tab_imp)
+dim(tab_imp)
+
+## Multiple imputation chaine equation (MICE)
+
+install.packages("mice")#depuis le cran
+library(mice)#chargement de la librairie
+#pmm:predictive mean matching; polyreg:multinomial logistic regression
+impute<-mice(df[,2:20],m=5,seed = 123)
+print(impute)
+impute$imp$heures.tv
+df[231,]
+summary(df$heures.tv)
+
+#complete data
+newdata<-complete(impute,4)
